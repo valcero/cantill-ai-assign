@@ -1,0 +1,49 @@
+supplier_id,name,city,categories,status,on_time_pct,quality_rating
+S001,Bhosari Steel Traders,Pune,Steel & Metals,Active,87,3.3
+S002,Deccan Metals,Pune,Steel & Metals,Active,79,4.5
+S003,Shreeji Steel Corporation,Mumbai,Steel & Metals,Active,98,4.6
+S004,Metalink Alloys,Nashik,Steel & Metals,Blocked,88,4.7
+S005,Kalyani Steel Stockists,Pune,Steel & Metals,Active,68,4.6
+S006,Unbrako Fastener Distributors,Pune,Fasteners,Active,92,4.8
+S007,Precision Fasteners Co,Pune,Fasteners,Active,88,2.9
+S008,Bolt & Nut House,Mumbai,Fasteners,Blocked,73,3.0
+S009,Weldtech Supplies,Pune,Welding Consumables,Active,83,4.6
+S010,Inox Gases Dealer Pune,Pune,Welding Consumables,Active,80,3.9
+S011,Spark Welding Stores,Chakan,Welding Consumables,Blocked,86,3.3
+S012,Ador Consumables Agent,Pune,Welding Consumables,Active,91,3.3
+S013,Industrial Bearings Co,Pune,Bearings & Transmission,Active,76,3.2
+S014,Mahalaxmi Machine Spares,Pune,Bearings & Transmission,Active,95,4.4
+S015,Bharat Bearing House,Mumbai,Bearings & Transmission,Active,73,4.4
+S016,Chakan Transmission Spares,Chakan,Bearings & Transmission,Active,70,3.1
+S017,Sai Electricals,Pune,Electrical Spares,Active,87,3.7
+S018,Powerline Switchgear,Pune,Electrical Spares,Active,72,2.8
+S019,Elcon Automation,Mumbai,Electrical Spares,Active,95,2.8
+S020,Vertex CNC Systems,Bengaluru,Electrical Spares;Capital Equipment,Active,92,3.3
+S021,Pneumatic Point,Pune,Hydraulics & Pneumatics,Active,73,4.6
+S022,Fluidline Hydraulics,Pune,Hydraulics & Pneumatics,Active,77,3.5
+S023,Hydrax Hydraulics,Ahmedabad,Hydraulics & Pneumatics,Active,74,3.9
+S024,Janatics Dealer Chakan,Chakan,Hydraulics & Pneumatics,Active,89,4.1
+S025,Kaveri Corrugators,Pune,Packaging,Active,73,4.8
+S026,Pallet World,Chakan,Packaging,Active,90,3.2
+S027,Vardhman Packaging,Pune,Packaging,Active,98,4.7
+S028,Zerust VCI Partner,Mumbai,Packaging,Active,77,2.8
+S029,SafeGuard Industrial Supplies,Pune,Safety & PPE,Active,81,3.1
+S030,Karam Safety Distributor,Pune,Safety & PPE,Active,72,3.4
+S031,Udyogi Safety Dealer,Mumbai,Safety & PPE,Inactive,78,3.4
+S032,Lubrizone Traders,Pune,Lubricants,Active,87,4.0
+S033,Castrol Industrial Distributor,Pune,Lubricants,Active,87,4.2
+S034,Servo Lubes Dealer,Chakan,Lubricants,Inactive,78,2.9
+S035,Infoline Systems,Pune,Office & IT,Active,79,4.5
+S036,Compuworld Technologies,Pune,Office & IT,Active,83,4.3
+S037,Officekart Supplies,Pune,Office & IT,Active,73,3.8
+S038,Sparkle Facility Services,Pune,Facility Services,Active,90,3.2
+S039,Eagle Eye Security Services,Pune,Facility Services,Active,76,4.8
+S040,Annapurna Caterers,Pune,Facility Services,Active,68,4.8
+S041,HiCare Pest Control Franchise,Pune,Facility Services,Active,79,4.6
+S042,Accurate Calibration Labs,Pune,Testing & Calibration,Active,68,4.0
+S043,TUV Inspection Partner,Mumbai,Testing & Calibration,Active,81,3.6
+S044,Metal Testing Labs,Pune,Testing & Calibration,Active,86,4.6
+S045,Indo Machinery Works,Pune,Capital Equipment,Active,82,2.9
+S046,Elgi Compressor Dealer,Pune,Capital Equipment,Active,73,4.1
+S047,Cranetech Engineers,Pune,Capital Equipment,Active,98,3.2
+S048,Godrej Material Handling Dealer,Pune,Capital Equipment,Active,92,3.3

@@ -1,0 +1,78 @@
+{
+  "policy_id": "CORVO-PROC-POL-04",
+  "version": "5.0",
+  "effective_from": "2026-04-01",
+  "title": "Corvo Engineering Procurement Policy (PR to PO)",
+  "parameters": {
+    "clubbing": {
+      "match_fields": ["item_code", "plant"],
+      "created_within_days": 14,
+      "need_by_within_days": 7,
+      "new_items_never_clubbed": true
+    },
+    "history": {
+      "recent_purchase_days": 365,
+      "preferred_window_days": 548
+    },
+    "ranking": {
+      "weights": { "frequency": 0.30, "recency": 0.25, "contract": 0.15, "on_time": 0.15, "quality": 0.15 },
+      "recency_tiers": [ { "within_days": 90, "score": 1 }, { "within_days": 365, "score": 0.5 } ]
+    },
+    "consolidation": {
+      "window_hours": 24,
+      "match_fields": ["supplier_id", "plant", "route"]
+    }
+  },
+  "rules": [
+    {
+      "id": "1.2",
+      "name": "New item (not in item master)",
+      "when": { "all": [ { "field": "is_new_item", "op": "eq", "value": true } ] },
+      "outcome": { "decision": "SOURCING_REQUEST", "route": "NEW_ITEM_SOURCING", "supplier": "none", "suggest": 0 }
+    },
+    {
+      "id": "5.1",
+      "name": "Capex items always go to sourcing",
+      "when": { "all": [ { "field": "item_type", "op": "eq", "value": "Capex" } ] },
+      "outcome": { "decision": "SOURCING_REQUEST", "route": "CAPEX_SOURCING", "supplier": "none", "suggest": 5 }
+    },
+    {
+      "id": "5.2",
+      "name": "Rate contract usable (any value)",
+      "when": { "all": [ { "field": "contract_usable", "op": "eq", "value": true } ] },
+      "outcome": { "decision": "PO", "route": "CONTRACT_PO", "supplier": "contract" }
+    },
+    {
+      "id": "5.3",
+      "name": "Emergency, up to 5,00,000, bought in last 365 days",
+      "when": { "all": [
+        { "field": "emergency", "op": "eq", "value": true },
+        { "field": "value", "op": "lte", "value": 500000 },
+        { "field": "bought_recently", "op": "eq", "value": true }
+      ] },
+      "outcome": { "decision": "PO", "route": "EMERGENCY_PO", "supplier": "preferred_first" }
+    },
+    {
+      "id": "5.4",
+      "name": "Spot PO: below 2,00,000 and bought in last 365 days",
+      "when": { "all": [
+        { "field": "value", "op": "lt", "value": 200000 },
+        { "field": "bought_recently", "op": "eq", "value": true }
+      ] },
+      "outcome": { "decision": "PO", "route": "SPOT_PO", "supplier": "preferred_first" }
+    },
+    {
+      "id": "5.5",
+      "name": "RFQ: below 10,00,000",
+      "when": { "all": [ { "field": "value", "op": "lt", "value": 1000000 } ] },
+      "outcome": { "decision": "SOURCING_REQUEST", "route": "RFQ", "supplier": "none", "suggest": 3 }
+    },
+    {
+      "id": "5.6",
+      "name": "RFP: 10,00,000 or more",
+      "when": { "all": [ { "field": "value", "op": "gte", "value": 1000000 } ] },
+      "outcome": { "decision": "SOURCING_REQUEST", "route": "RFP", "supplier": "none", "suggest": 5 }
+    }
+  ],
+  "notes": "Blocked or Inactive suppliers never receive a PO and are never suggested (clause 5.7). This is enforced by the engine for every policy version."
+}

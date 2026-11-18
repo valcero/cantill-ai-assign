@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corvo PR to PO</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand">Corvo <span>PR&nbsp;to&nbsp;PO</span></div>
+  <nav id="nav">
+    <button data-tab="chat" class="active">Request</button>
+    <button data-tab="work">Buyer workspace</button>
+    <button data-tab="policy">Policy</button>
+    <button data-tab="suppliers">Preferred suppliers</button>
+    <button data-tab="contracts">Contracts</button>
+    <button data-tab="audit">Activity</button>
+  </nav>
+  <div class="who">
+    <span id="policyBadge" class="badge" title="Policy version in force today"></span>
+    <label>Date <input id="todayInput" type="date" title="System date used for chat requests"></label>
+    <label>You <input id="userInput" placeholder="your name" size="12"></label>
+  </div>
+</header>
+<div id="toast" class="toast" hidden></div>
+
+<main>
+<!-- REQUEST CHAT -->
+<section id="tab-chat" class="tab">
+  <div class="chatwrap">
+    <div class="card chatcard">
+      <h2>Raise a purchase request</h2>
+      <p class="muted">Type what you need, like <em>need 200 nitrile gloves for Chakan by next Friday</em>. I will ask for anything missing, then confirm before creating the PR.</p>
+      <div id="chatlog" class="chatlog"></div>
+      <div id="quick" class="quick"></div>
+      <form id="chatform" class="chatform">
+        <input id="chatinput" autocomplete="off" placeholder="What do you need?" autofocus>
+        <button class="primary" type="submit">Send</button>
+      </form>
+    </div>
+    <div class="card side">
+      <h3>My requests</h3>
+      <div id="myprs" class="muted">Nothing yet.</div>
+      <p class="muted small">Every PR is decided against the active procurement policy. A buyer approves it in the Buyer workspace.</p>
+    </div>
+  </div>
+</section>
+
+<!-- BUYER WORKSPACE -->
+<section id="tab-work" class="tab" hidden>
+  <div class="bar">
+    <div>
+      <label>Run <select id="runSelect"></select></label>
+      <span id="runMeta" class="muted"></span>
+    </div>
+    <div class="actions">
+      <label class="filebtn">Upload PR batch CSV<input id="batchFile" type="file" accept=".csv,text/csv"></label>
+      <a id="exportRun" class="btn" href="#">Export decisions CSV</a>
+    </div>
+  </div>
+  <div id="runSummary" class="chips"></div>
+  <div class="filters">
+    <input id="reqSearch" placeholder="Search item, PR, supplier">
+    <select id="fRoute"><option value="">All routes</option></select>
+    <select id="fStatus"><option value="">All statuses</option><option>PENDING</option><option>APPROVED</option><option>OVERRIDDEN</option></select>
+    <button id="approveAllBtn" class="primary">Approve all shown pending POs</button>
+  </div>
+  <div class="split">
+    <div class="tablewrap"><table id="reqTable"><thead><tr>
+      <th>Req</th><th>Item</th><th>Plant</th><th>Qty</th><th class="r">Value</th><th>Decision</th><th>Supplier / suggestions</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+    <aside id="detail" class="card detail"><p class="muted">Select a requirement to see why it was decided that way.</p></aside>
+  </div>
+</section>
+
+<!-- POLICY -->
+<section id="tab-policy" class="tab" hidden>
+  <div class="grid2">
+    <div class="card">
+      <h2>Change the policy</h2>
+      <p class="muted">Describe a change in plain words, or upload an amendment (PDF, text, or JSON). You will see what changes before anything is activated.</p>
+      <textarea id="policyText" rows="6" placeholder="e.g. From 1 December 2026 the spot PO limit is Rs 3,00,000. For plant CHK1, all Safety &amp; PPE requirements above Rs 50,000 must go to RFQ."></textarea>
+      <div class="row">
+        <label class="filebtn">Upload amendment<input id="policyFile" type="file" accept=".pdf,.txt,.md,.json,text/plain,application/pdf,application/json"></label>
+        <label>Effective from <input id="policyDate" type="date"></label>
+        <button id="policyPropose" class="primary">Read and show changes</button>
+      </div>
+      <div id="proposal"></div>
+    </div>
+    <div class="card">
+      <h2>Versions</h2>
+      <table id="polTable"><thead><tr><th>Version</th><th>Effective</th><th>Status</th><th>Source</th><th></th></tr></thead><tbody></tbody></table>
+      <p class="muted small">The version in force for a batch is the latest approved version whose effective date is on or before the batch date.</p>
+      <div id="polView"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SUPPLIERS -->
+<section id="tab-suppliers" class="tab" hidden>
+  <div class="bar">
+    <div><label>As of <input id="prefDate" type="date"></label>
+      <input id="prefSearch" placeholder="Search item"></div>
+    <div class="actions"><a id="prefExport" class="btn primary" href="#">Export top 3 per item (CSV)</a></div>
+  </div>
+  <div class="split">
+    <div class="tablewrap"><table id="prefItems"><thead><tr><th>Item</th><th>Category</th><th>1st preferred</th></tr></thead><tbody></tbody></table></div>
+    <aside id="prefDetail" class="card detail"><p class="muted">Select an item to see its ranked suppliers and why each is ranked there.</p></aside>
+  </div>
+</section>
+
+<!-- CONTRACTS -->
+<section id="tab-contracts" class="tab" hidden>
+  <div class="grid2">
+    <div class="card">
+      <h2>Rate contracts</h2>
+      <table id="conTable"><thead><tr><th>Contract</th><th>Supplier</th><th>Valid</th><th class="r">Ceiling</th><th class="r">Consumed</th><th>Source</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card">
+      <h2>Add a contract</h2>
+      <p class="muted">Signed after the last register update? Upload the PDF and check what was read, or enter it by hand.</p>
+      <div class="row"><label class="filebtn primary">Upload contract PDF<input id="conPdf" type="file" accept=".pdf,application/pdf"></label>
+      <button id="conManual">Enter manually</button></div>
+      <div id="conForm"></div>
+    </div>
+  </div>
+</section>
+
+<!-- AUDIT -->
+<section id="tab-audit" class="tab" hidden>
+  <div class="card"><h2>Activity</h2><p class="muted">Every action with who and when.</p>
+    <table id="auditTable"><thead><tr><th>When</th><th>Who</th><th>Action</th><th>On</th><th>Detail</th></tr></thead><tbody></tbody></table></div>
+</section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

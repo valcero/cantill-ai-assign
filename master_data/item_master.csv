@@ -1,0 +1,74 @@
+item_code,description,uom,category,item_type,standard_price
+ITM-1001,MS sheet 2mm 1250x2500,NOS,Steel & Metals,Material,6800
+ITM-1002,MS sheet 3mm 1250x2500,NOS,Steel & Metals,Material,9900
+ITM-1003,EN8 round bar 40mm,KG,Steel & Metals,Material,92
+ITM-1004,SS 304 sheet 1.5mm,NOS,Steel & Metals,Material,21500
+ITM-1005,MS angle 50x50x5,KG,Steel & Metals,Material,74
+ITM-1006,Aluminium plate 6061 10mm,KG,Steel & Metals,Material,365
+ITM-1007,MS flat 50x6,KG,Steel & Metals,Material,71
+ITM-1008,Bright bar EN1A 25mm,KG,Steel & Metals,Material,88
+ITM-1009,Hex bolt M10x40 GR 8.8,NOS,Fasteners,Material,7.5
+ITM-1010,Hex nut M10 GR 8,NOS,Fasteners,Material,1.9
+ITM-1011,Allen cap screw M8x25,NOS,Fasteners,Material,6.2
+ITM-1012,Spring washer M10,NOS,Fasteners,Material,0.8
+ITM-1013,Anchor fastener M12x100,NOS,Fasteners,Material,38
+ITM-1014,Hex bolt M16x60 GR 10.9,NOS,Fasteners,Material,24
+ITM-1015,Welding electrode E6013 3.15mm,KG,Welding Consumables,Material,165
+ITM-1016,MIG wire ER70S-6 1.2mm,KG,Welding Consumables,Material,128
+ITM-1017,Argon gas cylinder 7 cum,CYL,Welding Consumables,Material,1450
+ITM-1018,CO2 gas cylinder 30kg,CYL,Welding Consumables,Material,1250
+ITM-1019,Grinding wheel 4 inch,NOS,Welding Consumables,Material,42
+ITM-1020,Cutting wheel 14 inch,NOS,Welding Consumables,Material,210
+ITM-1021,Ball bearing 6205-2RS,NOS,Bearings & Transmission,Material,210
+ITM-1022,Ball bearing 6308-ZZ,NOS,Bearings & Transmission,Material,640
+ITM-1023,Taper roller bearing 32210,NOS,Bearings & Transmission,Material,1450
+ITM-1024,V-belt B-54,NOS,Bearings & Transmission,Material,330
+ITM-1025,Chain sprocket 08B 20T,NOS,Bearings & Transmission,Material,780
+ITM-1026,Gearbox oil seal 45x62x8,NOS,Bearings & Transmission,Material,95
+ITM-1027,Coupling spider L-100,NOS,Bearings & Transmission,Material,260
+ITM-1028,Contactor 3 pole 32A,NOS,Electrical Spares,Material,1850
+ITM-1029,MCB 4 pole 63A,NOS,Electrical Spares,Material,1650
+ITM-1030,Proximity sensor M18 PNP,NOS,Electrical Spares,Material,1200
+ITM-1031,Copper cable 4 core 6 sqmm,MTR,Electrical Spares,Material,245
+ITM-1032,LED flood light 100W,NOS,Electrical Spares,Material,2350
+ITM-1033,Servo drive 2kW (Vertex CNC),NOS,Electrical Spares,Material,68500
+ITM-1034,Encoder for CNC spindle (Vertex),NOS,Electrical Spares,Material,42000
+ITM-1035,Hydraulic hose 1/2 inch 2 wire,MTR,Hydraulics & Pneumatics,Material,420
+ITM-1036,Pneumatic cylinder 50x100,NOS,Hydraulics & Pneumatics,Material,3900
+ITM-1037,Solenoid valve 5/2 1/4 inch,NOS,Hydraulics & Pneumatics,Material,2650
+ITM-1038,Hydraulic oil HLP 68,LTR,Hydraulics & Pneumatics,Material,165
+ITM-1039,FRL unit 1/2 inch,NOS,Hydraulics & Pneumatics,Material,2900
+ITM-1040,Hydraulic pump seal kit (Hydrax),SET,Hydraulics & Pneumatics,Material,18500
+ITM-1041,Corrugated box 5 ply 600x400x400,NOS,Packaging,Material,78
+ITM-1042,Wooden pallet 1200x1000,NOS,Packaging,Material,1150
+ITM-1043,Stretch film 23 micron,KG,Packaging,Material,165
+ITM-1044,VCI bag 600x900,NOS,Packaging,Material,21
+ITM-1045,PP strapping roll,ROL,Packaging,Material,1250
+ITM-1046,Safety shoes steel toe,PAIR,Safety & PPE,Material,1150
+ITM-1047,Cotton hand gloves,PAIR,Safety & PPE,Material,28
+ITM-1048,Nitrile coated gloves,PAIR,Safety & PPE,Material,95
+ITM-1049,Safety helmet ISI,NOS,Safety & PPE,Material,210
+ITM-1050,Safety goggles clear,NOS,Safety & PPE,Material,120
+ITM-1051,Ear plugs disposable,PAIR,Safety & PPE,Material,9
+ITM-1052,Cutting oil soluble 210L,BRL,Lubricants,Material,31500
+ITM-1053,Grease EP2 18kg,BKT,Lubricants,Material,4200
+ITM-1054,Way lube oil 68,LTR,Lubricants,Material,210
+ITM-1055,Slideway oil 220,LTR,Lubricants,Material,230
+ITM-1056,Laptop i5 16GB 512GB,NOS,Office & IT,Material,68000
+ITM-1057,24 inch monitor,NOS,Office & IT,Material,11500
+ITM-1058,A4 paper 75 GSM,REAM,Office & IT,Material,265
+ITM-1059,Toner cartridge HP 88A,NOS,Office & IT,Material,2950
+ITM-1060,Wireless keyboard mouse combo,NOS,Office & IT,Material,1450
+ITM-1061,Housekeeping services (monthly),MON,Facility Services,Service,185000
+ITM-1062,Security guard services (monthly),MON,Facility Services,Service,240000
+ITM-1063,Pest control (quarterly),QTR,Facility Services,Service,18000
+ITM-1064,Canteen services (monthly),MON,Facility Services,Service,310000
+ITM-1065,Calibration of vernier & micrometers,JOB,Testing & Calibration,Service,9500
+ITM-1066,CMM calibration service,JOB,Testing & Calibration,Service,65000
+ITM-1067,Material testing - tensile test,JOB,Testing & Calibration,Service,3500
+ITM-1068,Third party inspection visit,JOB,Testing & Calibration,Service,18000
+ITM-1069,CNC turning centre 8 inch chuck,NOS,Capital Equipment,Capex,4200000
+ITM-1070,Air compressor 30HP screw,NOS,Capital Equipment,Capex,780000
+ITM-1071,EOT crane 5 ton,NOS,Capital Equipment,Capex,1450000
+ITM-1072,Hydraulic press 100 ton,NOS,Capital Equipment,Capex,2600000
+ITM-1073,Forklift electric 2 ton,NOS,Capital Equipment,Capex,1150000
