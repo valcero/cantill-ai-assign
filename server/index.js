@@ -125,14 +125,18 @@ function createApp(db) {
     if (!last) return res.json({ available: false });
     const rows = db.prepare('SELECT raw FROM run_lines WHERE run_id=? ORDER BY idx').all(last.id).map((r) => JSON.parse(r.raw));
     const ds = loadDataset(db);
-    const base = pol.getPolicy(db, db.prepare('SELECT id FROM policies WHERE version=?').get(p.base_version).id).body;
-    const a = runEngine({ ds, policy: { ...base, version: p.base_version }, lines: rows });
-    const b = runEngine({ ds, policy: { ...p.body, version: p.version }, lines: rows });
+    const before = runs.policyResolver(db);
+    const proposed = { ...p.body, version: p.version, effective_from: p.effective_from };
+    const after = (d) => (d && d >= p.effective_from ? proposed : before(d));
+    const a = runEngine({ ds, policyFor: before, lines: rows });
+    const b = runEngine({ ds, policyFor: after, lines: rows });
+    const notCovered = rows.filter((r) => (dateOf(r.created_at) || '') < p.effective_from).length;
     const changed = [];
     a.lines.forEach((l, i) => { if (l.route !== b.lines[i].route || l.supplier_id !== b.lines[i].supplier_id) changed.push({ pr_no: l.pr_no, pr_line: l.pr_line, item: l.resolved_item_code, before: `${l.route} ${l.supplier_id || l.suggested_supplier_ids}`.trim(), after: `${b.lines[i].route} ${b.lines[i].supplier_id || b.lines[i].suggested_supplier_ids}`.trim() }); });
-    res.json({ available: true, run_id: last.id, lines: rows.length, changed_lines: changed.length, examples: changed.slice(0, 12) });
+    res.json({ available: true, run_id: last.id, lines: rows.length, effective_from: p.effective_from, lines_before_effective: notCovered, changed_lines: changed.length, examples: changed.slice(0, 12) });
   });
   api.post('/policies/:id/approve', (req, res) => res.json(pol.approvePolicy(db, Number(req.params.id), actor(req), { effectiveFrom: dateOf(req.body && req.body.effective_from), note: req.body && req.body.note })));
+  api.put('/policies/:id', (req, res) => res.json(pol.updateProposal(db, Number(req.params.id), req.body, actor(req))));
   api.post('/policies/:id/reject', (req, res) => res.json(pol.rejectPolicy(db, Number(req.params.id), actor(req), req.body && req.body.note)));
 
   // ---- chat

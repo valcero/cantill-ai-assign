@@ -89,6 +89,26 @@ function approvePolicy(db, id, actor, { effectiveFrom, note } = {}) {
     return getPolicy(db, id);
   });
 }
+/** Procurement corrects a proposed version by hand (edited JSON). The diff is recomputed and re-validated. */
+function updateProposal(db, id, body, actor) {
+  const p = getPolicy(db, id);
+  if (!p) { const e = new Error('Policy proposal not found'); e.status = 404; throw e; }
+  if (p.status !== 'proposed') { const e = new Error(`Only a proposed version can be edited (this one is ${p.status})`); e.status = 409; throw e; }
+  if (!body || typeof body !== 'object') { const e = new Error('Send the edited policy as JSON'); e.status = 400; throw e; }
+  const next = clone(body);
+  next.version = p.version;
+  next.effective_from = next.effective_from || p.effective_from;
+  const errors = validatePolicy(next);
+  if (errors.length) { const e = new Error('The edited policy is not valid: ' + errors.join('; ')); e.status = 422; throw e; }
+  const baseRow = db.prepare("SELECT * FROM policies WHERE version=? AND status='approved'").get(p.base_version);
+  const base = baseRow ? { ...JSON.parse(baseRow.body), version: baseRow.version, effective_from: baseRow.effective_from } : latestApproved(db);
+  const changes = { ...(p.changes || {}), diff: diffPolicies(base, next), edited_by: actor, edited_at: new Date().toISOString() };
+  changes.notes = [...(changes.notes || []), `Edited by hand by ${actor}.`];
+  db.prepare('UPDATE policies SET body=?, effective_from=?, changes=? WHERE id=?').run(JSON.stringify(next), next.effective_from, JSON.stringify(changes), id);
+  audit(db, actor, 'edit_policy_proposal', 'policy', id, { version: p.version, changes: changes.diff.length });
+  return getPolicy(db, id);
+}
+
 function rejectPolicy(db, id, actor, note) {
   const p = getPolicy(db, id);
   if (!p || p.status !== 'proposed') { const e = new Error('Only a proposed version can be rejected'); e.status = 409; throw e; }
@@ -97,4 +117,4 @@ function rejectPolicy(db, id, actor, note) {
   return getPolicy(db, id);
 }
 
-module.exports = { latestApproved, activePolicyFor, policyByVersion, listPolicies, getPolicy, propose, approvePolicy, rejectPolicy, context };
+module.exports = { latestApproved, activePolicyFor, policyByVersion, listPolicies, getPolicy, propose, approvePolicy, rejectPolicy, updateProposal, context };

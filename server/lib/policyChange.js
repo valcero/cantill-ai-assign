@@ -30,8 +30,11 @@ function applyOps(policy, ops) {
         const r = findRule(p, op.rule_id);
         if (!r) throw new Error(`rule ${op.rule_id} not found`);
         let n = 0;
-        walkLeaves(r.when, (l) => { if (l.field === op.field && l.op === op.cmp && (op.only_scope_free !== false)) { if (op.old === undefined || l.value === op.old) { l.value = op.value; n++; } } });
+        const olds = [];
+        walkLeaves(r.when, (l) => { if (l.field === op.field && l.op === op.cmp && (op.only_scope_free !== false)) { if (op.old === undefined || l.value === op.old) { olds.push(l.value); l.value = op.value; n++; } } });
         if (!n) throw new Error(`rule ${op.rule_id} has no ${op.field} ${op.cmp} condition to change`);
+        // keep the rule's name honest: "Spot PO: below 2,00,000" -> "Spot PO: below 3,00,000"
+        if (r.name && op.field === 'value') for (const o of olds) if (typeof o === 'number') r.name = r.name.split(inr(o).slice(1)).join(inr(op.value).slice(1));
         break;
       }
       case 'update_rule': {
@@ -152,7 +155,7 @@ const ROUTE_WORDS = [
 function routesIn(s) {
   const t = s.toLowerCase();
   const out = [];
-  for (const [w, r] of ROUTE_WORDS) { const i = t.search(new RegExp(`\\b${w}\\b`)); if (i >= 0 && !out.some((o) => o.route === r)) out.push({ route: r, index: i }); }
+  for (const [w, r] of ROUTE_WORDS) { const i = t.search(new RegExp(`\\b${w}s?\\b`)); if (i >= 0 && !out.some((o) => o.route === r)) out.push({ route: r, index: i }); }
   return out.sort((a, b) => a.index - b.index);
 }
 
@@ -166,6 +169,16 @@ function scopeIn(s, ctx) {
   }
   if (plants.length) scope.push({ field: 'plant', op: plants.length > 1 ? 'in' : 'eq', value: plants.length > 1 ? plants : plants[0] });
   const cats = ctx.categories.filter((c) => t.includes(c.toLowerCase()));
+  // Nicknames: "Electrical items" -> Electrical Spares, "safety" -> Safety & PPE. A word counts only if it
+  // points at exactly one category and is not a generic word.
+  const GENERIC = new Set(['spares', 'services', 'service', 'equipment', 'consumables', 'materials', 'material', 'items', 'capital']);
+  if (!cats.length) {
+    for (const c of ctx.categories) {
+      const words = c.toLowerCase().split(/[^a-z]+/).filter((w) => w.length >= 3 && !GENERIC.has(w));
+      const hit = words.find((w) => new RegExp(`\\b${w}`).test(t) && ctx.categories.filter((o) => o.toLowerCase().includes(w)).length === 1);
+      if (hit && !cats.includes(c)) cats.push(c);
+    }
+  }
   if (cats.length) scope.push({ field: 'category', op: cats.length > 1 ? 'in' : 'eq', value: cats.length > 1 ? cats : cats[0] });
   const tm = /\b(service|material|capex)\s+items?\b|item\s*type\s*(?:is\s*|=\s*)?(service|material|capex)\b/i.exec(s);
   if (tm) scope.push({ field: 'item_type', op: 'eq', value: (tm[1] || tm[2]).replace(/^./, (c) => c.toUpperCase()).toLowerCase().replace(/^./, (c) => c.toUpperCase()) });
@@ -248,7 +261,7 @@ function heuristicParse(text, policy, ctx) {
     const sg = /suggest(?:ed)?\s+(\d+)\s+suppliers?|(\d+)\s+suppliers?\s+(?:must|should|to)\s+be\s+suggested/i.exec(s);
     if (sg && routes.length) {
       const r = routeRule(routes[0].route);
-      if (r) { const n = Number(sg[1] || sg[2]); if (r.outcome.suggest !== n) { ops.push({ op: 'update_rule', rule_id: r.id, patch: { outcome: { ...r.outcome, suggest: n } } }); notes.push(`Read: "${s}"`); } }
+      if (r) { const n = Number(sg[1] || sg[2]); handled = true; if (r.outcome.suggest !== n) { ops.push({ op: 'update_rule', rule_id: r.id, patch: { outcome: { ...r.outcome, suggest: n } } }); notes.push(`Read: "${s}"`); } }
     }
 
     // 3. Limits and new rules need a route and a money amount
@@ -258,7 +271,8 @@ function heuristicParse(text, policy, ctx) {
       const scoped = scope.filter((c) => !(c.field === 'emergency'));
       // change of an existing limit
       const looksLikeLimit = /limit|threshold|ceiling|cap\b|below|under|up to|upto|above|at or above|more than|less than/i.test(s);
-      if (isChange && looksLikeLimit && base && !(isNewRule && !/limit|threshold/.test(low))) {
+      const statesLimit = isChange || /\b(limit|threshold)\b|\b(may|can|allowed|permitted)\b/i.test(s);
+      if (statesLimit && looksLikeLimit && base && !(isNewRule && !/limit|threshold/.test(low))) {
         // new value = amount after "to"/"now"/"becomes", else the last amount
         let m2 = null;
         const toRe = /(?:\bto\b|\bnow\b|becomes?|set at|instead of)\s*(?:be\s*)?(?:₹|rs\.?|inr)?\s*(\d[\d,]*(?:\.\d+)?)\s*(lakhs?|lacs?|crores?|cr\b|k\b|l\b)?/gi;
@@ -286,6 +300,7 @@ function heuristicParse(text, policy, ctx) {
             clonedRule.name = `${base.name || base.outcome.route} for ${scoped.map((c) => `${c.field} ${Array.isArray(c.value) ? c.value.join('/') : c.value}`).join(', ')}`;
             clonedRule.when = { all: [...scoped, ...(clone(base.when).all || [])] };
             walkLeaves(clonedRule.when, (l) => { if (l.field === 'value' && l.op === leafOp) l.value = newVal; });
+            if (typeof old === 'number') clonedRule.name = clonedRule.name.split(inr(old).slice(1)).join(inr(newVal).slice(1));
             const exclusion = { not: { all: scoped } };
             const baseWhen = clone(base.when); baseWhen.all = [...(baseWhen.all || []), exclusion];
             ops.push({ op: 'add_rule', before: base.id, rule: clonedRule });
@@ -323,7 +338,8 @@ function heuristicParse(text, policy, ctx) {
         working.policy = applyOps(working.policy, [op]).policy;
       }
     }
-    if (!handled && (money.length || routes.length) && (isChange || isNewRule)) unread.push(s);
+    // Anything that looks like a rule but was not turned into one is reported, never dropped silently.
+    if (!handled && (money.length || routes.length || scope.length || /\d+\s*(?:calendar\s*)?(days|hours)/i.test(s) || /\b(must|shall|should|not allowed|never|always|only|mandatory|required)\b/i.test(s)) && !/^(amendment|version|policy)\b/i.test(s)) unread.push(s);
   }
   return { ops, effective_from, version, notes, unread, engine: 'rules' };
 }

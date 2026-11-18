@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "corvo-pr-to-po",
   "version": "1.0.0",
   "private": true,
@@ -6,7 +6,7 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "test": "node --test tests/"
+    "test": "node --test \"tests/*.test.js\""
   },
   "engines": { "node": ">=22.13" },
   "dependencies": {

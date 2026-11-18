@@ -53,11 +53,27 @@ function processBatch(db, rows, { actor = 'api', filename = '', policyVersion = 
   const ds = loadDataset(db);
   const dates = rows.map((r) => dateOf(r.created_at)).filter(Boolean).sort();
   const as_of = asOf || dates[dates.length - 1] || new Date().toISOString().slice(0, 10);
-  const policy = policyVersion ? policyByVersion(db, policyVersion) : activePolicyFor(db, as_of);
-  if (!policy) { const e = new Error(`Policy version ${policyVersion} not found`); e.status = 404; throw e; }
-  const result = runEngine({ ds, policy, lines: rows });
+  let policyFor;
+  if (policyVersion) {
+    const forced = policyByVersion(db, policyVersion);
+    if (!forced) { const e = new Error(`Policy version ${policyVersion} not found`); e.status = 404; throw e; }
+    policyFor = () => forced;
+  } else policyFor = policyResolver(db);
+  const result = runEngine({ ds, policyFor, lines: rows });
+  const policy = { version: result.policy_version };
   const runId = persistRun(db, { rows, result, source, filename, policy, asOf: as_of, actor });
-  return { run_id: runId, policy_version: policy.version, policy_effective_from: policy.effective_from, as_of, summary: summarize(result), decisions: result.lines };
+  const latest = policyFor(as_of);
+  return { run_id: runId, policy_version: result.policy_version, policy_versions: result.policy_versions, policy_effective_from: latest.effective_from, as_of, summary: summarize(result), decisions: result.lines };
+}
+
+/** Cached lookup of the approved policy version in force on a date (latest effective_from on or before it). */
+function policyResolver(db) {
+  const cache = new Map();
+  return (date) => {
+    const d = date || '9999-12-31';
+    if (!cache.has(d)) cache.set(d, activePolicyFor(db, d));
+    return cache.get(d);
+  };
 }
 
 function getRun(db, runId) {
@@ -196,4 +212,4 @@ function exportRun(db, runId) {
   return toCsv(run.lines, OUT_COLUMNS);
 }
 
-module.exports = { parseBatchCsv, processBatch, getRun, approve, override, approveAll, exportRun, toCsv, OUT_COLUMNS, hydrate, persistRun, effectiveDecision, SOURCING_ROUTES, PO_ROUTES, summarize };
+module.exports = { parseBatchCsv, processBatch, getRun, approve, override, approveAll, exportRun, toCsv, OUT_COLUMNS, hydrate, persistRun, effectiveDecision, SOURCING_ROUTES, PO_ROUTES, summarize, policyResolver };

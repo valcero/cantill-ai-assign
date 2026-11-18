@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DB_FILE=/app/data/app.db
+      # Optional: pin the app's "today" (used for chat dates like "next Friday")
+      - APP_TODAY=${APP_TODAY:-}
+      # Optional: language model for reading policy amendments (OpenAI-compatible API)
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_BASE_URL=${LLM_BASE_URL:-}
+      - LLM_MODEL=${LLM_MODEL:-}
+    volumes:
+      - appdata:/app/data
+volumes:
+  appdata:

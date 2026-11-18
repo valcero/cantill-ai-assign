@@ -302,8 +302,9 @@ function reprocessChat(db, rawNew, actor) {
   const pool = all.filter((l) => !frozenLines.has(`${l.pr_no}/${l.pr_line}`)).map((l) => JSON.parse(l.raw));
   pool.push(rawNew);
   const ds = loadDataset(db);
-  const policy = activePolicyFor(db, rawNew.created_at.slice(0, 10));
-  const result = runEngine({ ds, policy, lines: pool, extraConsumed: extra });
+  const policyFor = require('./runs').policyResolver(db);
+  const result = runEngine({ ds, policyFor, lines: pool, extraConsumed: extra });
+  const policy = { version: result.policy_version };
   // stable ids: group = CH-<first pr>, PO = PO-<first group>
   const gmap = new Map();
   for (const r of result.requirements) { const nid = `CH-${r.lines[0].pr_no}`; gmap.set(r.group_id, nid); }

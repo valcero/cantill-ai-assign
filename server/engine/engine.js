@@ -72,19 +72,21 @@ function shareFields(policy) {
   return policy.parameters.clubbing.match_fields || ['item_code', 'plant'];
 }
 
-function clubLines(lines, policy) {
-  const cp = policy.parameters.clubbing;
-  const fields = shareFields(policy);
+// policyFor(date) returns the policy version in force on that date. Each requirement is governed by the
+// version in force on its requirement date (the creation date of its first line, policy 2.3).
+function clubLines(lines, policyFor) {
   const sorted = [...lines].sort((a, b) => a.created_ms - b.created_ms || a.pr_no.localeCompare(b.pr_no) || (Number(a.pr_line) - Number(b.pr_line)) || 0);
   const reqs = [];
+  const keyOf = (x, fields) => fields.map((f) => (f === 'item_code' ? x.item?.item_code : f === 'category' ? x.item?.category : x[f])).join('|');
   for (const l of sorted) {
-    const key = (x) => fields.map((f) => (f === 'item_code' ? x.item?.item_code : f === 'category' ? x.item?.category : x[f])).join('|');
     let joined = null;
-    if (l.item || !cp.new_items_never_clubbed) {
+    const own = policyFor(l.created_date).parameters.clubbing;
+    if (l.item || !own.new_items_never_clubbed) {
       for (const r of reqs) {
+        const cp = r.policy.parameters.clubbing;
         if (r.is_new && cp.new_items_never_clubbed) continue;
         if (r.is_new !== !l.item) continue;
-        if (r.key !== key(l)) continue;
+        if (keyOf(r.first, shareFields(r.policy)) !== keyOf(l, shareFields(r.policy))) continue;
         if (dayDiff(r.first.created_date, l.created_date) > cp.created_within_days) continue;
         if (r.first.need_by_date && l.need_by_date) {
           if (Math.abs(dayDiff(r.first.need_by_date, l.need_by_date)) > cp.need_by_within_days) continue;
@@ -93,7 +95,7 @@ function clubLines(lines, policy) {
       }
     }
     if (joined) joined.lines.push(l);
-    else reqs.push({ lines: [l], first: l, key: key(l), is_new: !l.item, item: l.item });
+    else reqs.push({ lines: [l], first: l, is_new: !l.item, item: l.item, policy: policyFor(l.created_date) });
   }
   reqs.forEach((r, i) => { r.group_id = `REQ-${String(i + 1).padStart(4, '0')}`; });
   return reqs;
@@ -226,9 +228,12 @@ function buildDecision(req, e, ds, policy, consumed) {
 }
 
 /**
- * lines: raw PR rows. opts.extraConsumed: Map(contract_id -> additional consumed value)
+ * lines: raw PR rows. extraConsumed: Map(contract_id -> additional consumed value).
+ * Pass either `policy` (one version for every requirement) or `policyFor(date)` (the version in force on a date).
  */
-function runEngine({ ds, policy, lines, extraConsumed }) {
+function runEngine({ ds, policy, policyFor, lines, extraConsumed }) {
+  if (!policyFor) policyFor = () => policy;
+  const fallback = policy || policyFor('9999-12-31');
   const plantSet = new Set((ds.plants || []).map((p) => p.plant));
   const seen = new Set();
   const prepared = lines.map((raw) => {
@@ -238,24 +243,25 @@ function runEngine({ ds, policy, lines, extraConsumed }) {
     return L;
   });
   const good = prepared.filter((l) => !l.reject);
-  const reqs = clubLines(good, policy);
+  const reqs = clubLines(good, policyFor);
   const consumed = new Map(ds.contracts.map((c) => [c.contract_id, c.consumed_value + ((extraConsumed && extraConsumed.get(c.contract_id)) || 0)]));
 
   // requirements in creation order consume ceilings in that order (policy 4.2)
   for (const r of reqs) {
-    const e = evaluate(r, ds, policy, consumed);
-    r.eval = e; r.decision = buildDecision(r, e, ds, policy, consumed);
+    const e = evaluate(r, ds, r.policy, consumed);
+    r.eval = e; r.decision = buildDecision(r, e, ds, r.policy, consumed);
   }
-  // PO consolidation (section 7)
-  const cons = policy.parameters.consolidation;
+  // PO consolidation (section 7). An open PO keeps the rules of the version that governed its first requirement.
   const pos = [];
+  const consKey = (r, fields) => fields.map((f) => (f === 'route' ? r.decision.route : f === 'supplier_id' ? r.decision.supplier_id : f === 'plant' ? r.first.plant : f === 'category' ? (r.item && r.item.category) : '')).join('|');
   for (const r of reqs) {
     const d = r.decision;
     if (d.decision !== 'PO') continue;
-    const keyOf = (x) => cons.match_fields.map((f) => (f === 'route' ? x.route : f === 'supplier_id' ? x.supplier_id : f === 'plant' ? r.first.plant : f === 'category' ? (r.item && r.item.category) : '')).join('|');
-    const key = keyOf(d);
-    let po = pos.find((p) => p.key === key && (r.first.created_ms - p.first_ms) <= cons.window_hours * 3600000);
-    if (!po) { po = { key, po_id: `PO-${String(pos.length + 1).padStart(4, '0')}`, first_ms: r.first.created_ms, supplier_id: d.supplier_id, plant: r.first.plant, route: d.route, groups: [] }; pos.push(po); }
+    let po = pos.find((p) => {
+      const cons = p.policy.parameters.consolidation;
+      return consKey(p.firstReq, cons.match_fields) === consKey(r, cons.match_fields) && (r.first.created_ms - p.first_ms) <= cons.window_hours * 3600000;
+    });
+    if (!po) { po = { po_id: `PO-${String(pos.length + 1).padStart(4, '0')}`, first_ms: r.first.created_ms, supplier_id: d.supplier_id, plant: r.first.plant, route: d.route, groups: [], policy: r.policy, firstReq: r }; pos.push(po); }
     po.groups.push(r.group_id);
     d.po_id = po.po_id;
   }
@@ -267,13 +273,13 @@ function runEngine({ ds, policy, lines, extraConsumed }) {
         pr_no: L.pr_no, pr_line: L.pr_line, resolved_item_code: r.item ? r.item.item_code : 'NEW', group_id: r.group_id,
         po_id: d.po_id || '', decision: d.decision, route: d.route, supplier_id: d.supplier_id || '',
         unit_price: d.unit_price == null ? '' : d.unit_price, group_value_inr: d.value,
-        suggested_supplier_ids: (d.suggested_ids || []).join(';'), policy_version: policy.version,
+        suggested_supplier_ids: (d.suggested_ids || []).join(';'), policy_version: r.policy.version,
         reason: d.reason + (L.notes.length ? ' Note: ' + L.notes.join('; ') + '.' : '')
       });
     }
   }
   const out = prepared.map((L) => {
-    if (L.reject) return { pr_no: L.pr_no, pr_line: L.pr_line, resolved_item_code: L.item ? L.item.item_code : '', group_id: '', po_id: '', decision: '', route: 'NOT_PROCESSED', supplier_id: '', unit_price: '', group_value_inr: '', suggested_supplier_ids: '', policy_version: policy.version, reason: `Not processed: ${L.reject}` };
+    if (L.reject) return { pr_no: L.pr_no, pr_line: L.pr_line, resolved_item_code: L.item ? L.item.item_code : '', group_id: '', po_id: '', decision: '', route: 'NOT_PROCESSED', supplier_id: '', unit_price: '', group_value_inr: '', suggested_supplier_ids: '', policy_version: policyFor(L.created_date || '9999-12-31').version, reason: `Not processed: ${L.reject}` };
     return lineIndex.get(`${L.pr_no}/${L.pr_line}`);
   });
   const requirements = reqs.map((r) => ({
@@ -285,7 +291,8 @@ function runEngine({ ds, policy, lines, extraConsumed }) {
     decision: r.decision, preferred: r.eval.preferred.slice(0, 5)
   }));
   const contractUse = [...consumed.entries()].map(([id, v]) => ({ contract_id: id, consumed_after: round2(v), start_consumed: ds.contractById.get(id).consumed_value, cap: ds.contractById.get(id).value_cap }));
-  return { policy_version: policy.version, lines: out, requirements, pos, contract_use: contractUse };
+  const versions = [...new Set(reqs.map((r) => r.policy.version))];
+  return { policy_version: versions.length ? versions.join('+') : fallback.version, policy_versions: versions, lines: out, requirements, pos: pos.map(({ policy: pp, firstReq, ...rest }) => ({ ...rest, policy_version: pp.version })), contract_use: contractUse };
 }
 
 module.exports = { buildIndex, runEngine, applicableContracts };

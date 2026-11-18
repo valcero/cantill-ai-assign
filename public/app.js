@@ -160,6 +160,7 @@ $('#batchFile').addEventListener('change', async (e) => {
 });
 
 // ---------- policy
+const FACT_FIELDS = 'item_code, item_name, item_type, category, plant, department, uom, quantity, value, unit_price, urgency, emergency, is_new_item, contract_applicable, contract_usable, bought_recently, has_preferred_supplier, line_count';
 async function loadPolicies() {
   const list = await api('/policies');
   $('#polTable tbody').innerHTML = list.map((p) => `<tr data-id="${p.id}"><td><b>v${esc(p.version)}</b></td><td>${esc(p.effective_from)}</td><td class="s-${p.status === 'approved' ? 'APPROVED' : 'PENDING'}">${esc(p.status)}</td><td class="small">${esc(p.source_name || '')}<br><span class="muted">${esc(p.created_by || '')}</span></td><td><button data-view="${p.id}">View</button></td></tr>`).join('');
@@ -176,9 +177,18 @@ async function showProposal(p) {
     <div class="muted small">Read by: ${esc(p.changes.engine === 'llm' ? 'language model' : p.changes.engine === 'rules' ? 'built-in reader' : p.changes.engine)}. ${esc((p.changes.notes || []).join(' '))}</div>
     <h4>What will change</h4>${p.changes.diff.map((d) => `<div class="diff ${d.kind}">${esc(d.text)}</div>`).join('') || '<p class="muted">No differences found.</p>'}
     ${(p.changes.unread || []).length ? `<h4 class="warn">Sentences I could not turn into rules</h4>${p.changes.unread.map((u) => `<div class="diff">${esc(u)}</div>`).join('')}` : ''}
-    ${imp.available ? `<h4>Impact on the last batch (run #${imp.run_id})</h4><p><b>${imp.changed_lines}</b> of ${imp.lines} lines would be decided differently.</p>${imp.examples.length ? `<table class="mini">${imp.examples.map((x) => `<tr><td>${esc(x.pr_no)}</td><td>${esc(x.item)}</td><td>${esc(x.before)}</td><td>\u2192</td><td>${esc(x.after)}</td></tr>`).join('')}</table>` : ''}` : ''}
+    ${imp.available ? `<h4>Impact on the last batch (run #${imp.run_id})</h4><p><b>${imp.changed_lines}</b> of ${imp.lines} lines would be decided differently.</p>${imp.lines_before_effective ? `<p class="warn small">${imp.lines_before_effective} of these lines were created before ${esc(imp.effective_from)}, so they stay on the earlier version. Change the effective date below if the amendment should cover them.</p>` : ''}${imp.examples.length ? `<table class="mini">${imp.examples.map((x) => `<tr><td>${esc(x.pr_no)}</td><td>${esc(x.item)}</td><td>${esc(x.before)}</td><td>\u2192</td><td>${esc(x.after)}</td></tr>`).join('')}</table>` : ''}` : ''}
+    <details><summary>Check or correct the rules before approving (edit as JSON)</summary>
+      <p class="muted small">Rules run top to bottom; the first match decides. Condition fields: ${esc(FACT_FIELDS)}. Operators: eq, ne, lt, lte, gt, gte, in, not_in, contains; combine with all / any / not.</p>
+      <textarea id="polEdit" rows="18" spellcheck="false" style="width:100%;font-family:monospace;font-size:12px">${esc(JSON.stringify(p.body, null, 2))}</textarea>
+      <div class="row"><button id="polSave">Save edits and show changes again</button></div>
+    </details>
     <div class="row"><label>Effective from <input type="date" id="effDate" value="${esc(p.effective_from)}"></label>
     <button class="primary" id="polApprove">Approve and activate</button><button id="polReject" class="danger">Reject</button></div></div>`;
+  $('#polSave').onclick = async () => {
+    let body; try { body = JSON.parse($('#polEdit').value); } catch (err) { return toast('Not valid JSON: ' + err.message, true); }
+    const np = await api(`/policies/${p.id}`, { method: 'PUT', body }); toast('Edits saved. Review the changes, then approve.'); await loadPolicies(); showProposal(np);
+  };
   $('#polApprove').onclick = async () => { await api(`/policies/${p.id}/approve`, { method: 'POST', body: { effective_from: $('#effDate').value } }); toast(`Policy v${p.version} approved, effective ${$('#effDate').value}`); $('#proposal').innerHTML = ''; await loadMeta(); await loadPolicies(); };
   $('#polReject').onclick = async () => { await api(`/policies/${p.id}/reject`, { method: 'POST', body: {} }); toast('Rejected'); $('#proposal').innerHTML = ''; await loadPolicies(); };
 }
