@@ -1,0 +1,16 @@
+# Render blueprint: New > Blueprint > select this repo.
+# Free plan has no persistent disk: the SQLite database is rebuilt from the kit data
+# (master data, contracts, policy v5.0) whenever the service restarts or redeploys.
+services:
+  - type: web
+    name: corvo-pr-to-po
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: DB_FILE
+        value: /app/data/app.db
+      - key: LLM_API_KEY
+        sync: false
