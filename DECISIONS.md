@@ -104,3 +104,16 @@ The weights and recency tiers are part of the policy data (`parameters.ranking`)
 
 - Timestamps in the batch are taken as plant local time (IST) with no time-zone conversion.
 - In chat, "today" is the server date unless it is pinned in Settings or with `APP_TODAY`, which is useful because the kit's data is in November 2026.
+
+## Blind test notes (19 Nov 2026, after the code freeze; no code was changed)
+
+**How Amendment No. 1 was entered.** I uploaded `Corvo_Policy_Amendment_1_v5.1.pdf` through the Policy screen's upload (`POST /api/policies/propose`). The built-in reader misread it: the PDF's line breaks split each sentence, so it missed A1 and most of A2, and it proposed a rule sending everything below ₹8 lakh to RFQ. The app listed the sentences it could not read and did not activate anything. I then used the app's own "correct the rules before approving" step (`PUT /api/policies/:id`) to encode the amendment, checked the plain-language diff, and approved v5.1 effective 2026-12-01. This is the review step the policy screen is designed for. The reader needs more work on PDFs with hard line breaks.
+
+**How each change was encoded:**
+- **A1, Packaging spot limit.** New rule 5.4-PKG (Packaging, below ₹1,00,000, bought recently → SPOT_PO) placed before 5.4, with Packaging excluded from the general 5.4. Packaging at or above ₹1 lakh then falls to RFQ or RFP. A1 names rule 5.4 only, so I left the emergency rule 5.3 and contract POs for Packaging unchanged.
+- **A2, RFP threshold.** Rules 5.5 and 5.6 now use ₹8,00,000.
+- **A3, rule 5.2A.** Two rules placed right after 5.2: CHK1 and Electrical Spares and value ≥ ₹8,00,000 → RFP (5 suggestions), otherwise CHK1 and Electrical Spares and value ≥ ₹50,000 → RFQ (3 suggestions). They sit after 5.2, so a usable contract still gives a contract PO, and before 5.3 and 5.4, so emergency and spot POs are blocked. Capex still goes first (5.1).
+
+**Effective date.** Each requirement is decided by the version in force on its requirement date (2.3). In Run 2, 98 lines fell under v5.1. That is fewer than the 110 lines created on or after 1 Dec, because some December lines were clubbed into requirements whose first line was in November. Every Run 1 → Run 2 difference is explained by A1 (7 lines), A2 (4) or A3 (8). The rest are PO numbers renumbering after those POs dropped out.
+
+**Known item-matching miss.** PR-26-00517 "housekeeping service for month" (2 MON) should have matched ITM-1061 "Housekeeping services (monthly)". The matcher does not treat "month" and "monthly" as the same word, so the line is valued at the requester's estimate as a new item (NEW_ITEM_SOURCING). I left the app's output as it is rather than editing the CSV by hand. A buyer would correct it in the workspace.
